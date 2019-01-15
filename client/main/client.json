@@ -1,0 +1,5 @@
+{
+  "connectMethod": "tcp",
+  "clientAddress": "localhost",
+  "connectionPort": 5000
+}

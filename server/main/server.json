@@ -1,0 +1,6 @@
+{
+  "connectMethod": "tcp",
+  "serverAddress": "localhost",
+  "connectionPort": 5000,
+  "receiveBuffer": 512
+}
