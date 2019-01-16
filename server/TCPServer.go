@@ -4,26 +4,31 @@ import (
 	"log"
 	"net"
 	"strconv"
+	"sync"
 )
 
 type TCPServer struct {
 	Method string
+	Address string
 	Port   int
+	Sessions     *sync.Map
 }
 
 var (
 	G_TCPServer *TCPServer
 )
 
-func InitTCPServer(ConnMethod string, ConnPort int) (err error) {
+func InitTCPServer() (err error) {
 	var (
 		tcpSvr *TCPServer
 	)
 
 
 	tcpSvr = &TCPServer{
-		Method: ConnMethod,
-		Port:   ConnPort,
+		Method: G_Config.ConnectMethod,
+		Address:G_Config.ServerAddress,
+		Port:   G_Config.ConnectionPort,
+		Sessions:   &sync.Map{},
 	}
 
 	G_TCPServer = tcpSvr
@@ -31,12 +36,12 @@ func InitTCPServer(ConnMethod string, ConnPort int) (err error) {
 	return
 }
 
-func (t *TCPServer) CreateListener(ListenAddress string) (listener net.Listener, err error) {
+func (t *TCPServer) CreateListener() (listener net.Listener, err error) {
 
-	if listener, err = net.Listen(G_TCPServer.Method, ListenAddress+":"+strconv.Itoa(G_TCPServer.Port)); err != nil {
+	if listener, err = net.Listen(G_TCPServer.Method, G_TCPServer.Address+":"+strconv.Itoa(G_TCPServer.Port)); err != nil {
 		log.Fatal("failed to create a listener:", err.Error())
 	}
-	log.Println("start " + G_TCPServer.Method + " at " + ListenAddress + ":" + strconv.Itoa(G_TCPServer.Port))
+	log.Println("start " + G_TCPServer.Method + " at " + G_TCPServer.Address + ":" + strconv.Itoa(G_TCPServer.Port))
 	return
 }
 
@@ -61,4 +66,13 @@ func (t *TCPServer) ListenAndAction(listener net.Listener, Action func(conn net.
 	go Action(conn)
 
 	return
+}
+
+func (t *TCPServer) GetConnsCount() int {
+	var count int
+	t.Sessions.Range(func(k, v interface{}) bool {
+		count++
+		return true
+	})
+	return count
 }

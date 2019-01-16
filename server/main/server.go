@@ -31,13 +31,13 @@ func main() {
 	}
 	log.Println("Initial configuration success")
 
-	if err = server.InitTCPServer(server.G_Config.ConnectMethod, server.G_Config.ConnectionPort); err != nil {
+	if err = server.InitTCPServer(); err != nil {
 		log.Fatal("failed to initial TCP server: ")
 		goto ERR
 	}
 	log.Println("Initial TCP server success")
 
-	if listener, err = server.G_TCPServer.CreateListener(server.G_Config.ServerAddress); err != nil {
+	if listener, err = server.G_TCPServer.CreateListener(); err != nil {
 		goto ERR
 	}
 	log.Println("Create TCP listener success")
@@ -56,7 +56,17 @@ func doReceiveMessage(conn net.Conn) {
 		msgBuf    []byte
 		msgLength int
 		err       error
+		sess *server.Session
+
 	)
+
+	sess = server.NewSession(&conn)
+	server.G_TCPServer.Sessions.Store(sess.GetSessionID(),sess)
+
+	defer func(){
+		conn.Close()
+		server.G_TCPServer.Sessions.Delete(sess.GetSessionID())
+	}()
 
 	log.Println(server.G_Config.ReceiveBuffer)
 
@@ -67,5 +77,6 @@ func doReceiveMessage(conn net.Conn) {
 			continue
 		}
 		fmt.Println("Received message: ", string(msgBuf[:msgLength]))
+		fmt.Println("GetConnsCount: ",server.G_TCPServer.GetConnsCount())
 	}
 }
