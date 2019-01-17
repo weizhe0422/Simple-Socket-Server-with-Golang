@@ -2,10 +2,9 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/weizhe0422/TCPServerWithGolang/server"
 	"log"
-	"net"
+	"time"
 )
 
 var (
@@ -19,53 +18,30 @@ func initArgs() {
 
 func main() {
 	var (
-		err      error
-		listener net.Listener
+		err error
 	)
 
 	initArgs()
 
 	if err = server.InitConfig(confFilePath); err != nil {
-		log.Fatal("failed to load configuration: ",err.Error())
+		log.Fatal("failed to load configuration: ", err.Error())
 		goto ERR
 	}
 	log.Println("Initial configuration success")
 
-	if err = server.InitTCPServer(server.G_Config.ConnectMethod, server.G_Config.ConnectionPort); err != nil {
-		log.Fatal("failed to initial TCP server: ")
-		goto ERR
-	}
+	server.InitTCPServer()
 	log.Println("Initial TCP server success")
 
-	if listener, err = server.G_TCPServer.CreateListener(server.G_Config.ServerAddress); err != nil {
-		goto ERR
-	}
-	log.Println("Create TCP listener success")
+	server.InitApiServer()
+	log.Println("Initial API server success")
 
-	log.Println("Start to accept request and do action...")
+	go server.G_ApiServer.StartToService()
+	server.G_TCPServer.StartToService()
+
 	for {
-		server.G_TCPServer.ListenAndAction(listener,doReceiveMessage)
+		time.Sleep(1 * time.Second)
 	}
 
 ERR:
 	log.Fatalln(err.Error())
-}
-
-func doReceiveMessage(conn net.Conn) {
-	var (
-		msgBuf    []byte
-		msgLength int
-		err       error
-	)
-
-	log.Println(server.G_Config.ReceiveBuffer)
-
-	for {
-		msgBuf = make([]byte, server.G_Config.ReceiveBuffer)
-		if msgLength, err = conn.Read(msgBuf); err != nil {
-			log.Fatalln("failed to read message: ", err.Error())
-			continue
-		}
-		fmt.Println("Received message: ", string(msgBuf[:msgLength]))
-	}
 }
