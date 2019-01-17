@@ -50,6 +50,7 @@ func main() {
 	if conn, err = client.G_TCPServer.CreateDialer(client.G_Config.ClientAddress); err != nil {
 		goto ERR
 	}
+	defer conn.Close()
 	log.Println("Success to dial to " + client.G_Config.ClientAddress + ":" + strconv.Itoa(client.G_Config.ConnectionPort))
 
 
@@ -76,11 +77,14 @@ func main() {
 				break
 			}
 
+			if (inputMsgTrim == "bye"){
+				return
+			}
+
 			respString.Write([]byte(inputMsgTrim))
 		}
 		conn.Write([]byte(clientNameTrim + ":" + respString.String()))
 	}
-
 
 
 ERR:
