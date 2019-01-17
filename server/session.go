@@ -1,4 +1,5 @@
 package server
+
 import (
 	uuid "github.com/satori/go.uuid"
 	"net"
@@ -46,7 +47,7 @@ func (s *Session) GetConn() *net.Conn {
 }
 
 // SetConn set a zero.Conn to session
-func (s *Session) SetConn(conn * net.Conn) {
+func (s *Session) SetConn(conn *net.Conn) {
 	s.conn = conn
 }
 

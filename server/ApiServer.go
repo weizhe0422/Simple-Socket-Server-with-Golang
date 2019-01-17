@@ -10,41 +10,41 @@ import (
 )
 
 type ApiServer struct {
-	httpSvr *http.Server
+	httpSvr  *http.Server
 	Method   string
 	Address  string
 	Port     int
 	Listener net.Listener
-	StopCh chan error
+	StopCh   chan error
 }
 
 var (
 	G_ApiServer *ApiServer
 )
 
-func InitApiServer(){
-	var(
+func InitApiServer() {
+	var (
 		apiServer *ApiServer
 	)
 
 	apiServer = &ApiServer{
 		httpSvr: &http.Server{
-			ReadTimeout: time.Duration(G_Config.ApiSvrReadTimeOut) * time.Millisecond,
+			ReadTimeout:  time.Duration(G_Config.ApiSvrReadTimeOut) * time.Millisecond,
 			WriteTimeout: time.Duration(G_Config.ApiSvrWriteTimeOut) * time.Millisecond,
 		},
-		Method: G_Config.ConnectMethod,
+		Method:  G_Config.ConnectMethod,
 		Address: G_Config.ServerAddress,
-		Port: G_Config.SocketPort,
-		StopCh: make(chan error),
+		Port:    G_Config.SocketPort,
+		StopCh:  make(chan error),
 	}
 
 	G_ApiServer = apiServer
 }
 
-func (a *ApiServer) StartToService()(err error){
+func (a *ApiServer) StartToService() (err error) {
 	var (
 		listener net.Listener
-		mux *http.ServeMux
+		mux      *http.ServeMux
 	)
 	if listener, err = a.CreateListener(); err != nil {
 		return
@@ -52,7 +52,7 @@ func (a *ApiServer) StartToService()(err error){
 	a.Listener = listener
 	log.Println("create API server listener success")
 
-	mux = createHandleFunc(G_Config.ServerStatusPath,chkServerStatus)
+	mux = createHandleFunc(G_Config.ServerStatusPath, chkServerStatus)
 	a.httpSvr.Handler = mux
 	log.Println("create API server HandleFunc success")
 
@@ -71,11 +71,11 @@ func (a *ApiServer) CreateListener() (listener net.Listener, err error) {
 	return
 }
 
-func (a *ApiServer) Stop(reason string){
+func (a *ApiServer) Stop(reason string) {
 	a.StopCh <- errors.New(reason)
 }
 
-func createHandleFunc(routerPath string, handlFunc func(http.ResponseWriter,*http.Request)) (mux *http.ServeMux){
+func createHandleFunc(routerPath string, handlFunc func(http.ResponseWriter, *http.Request)) (mux *http.ServeMux) {
 
 	mux = http.NewServeMux()
 	mux.HandleFunc(routerPath, handlFunc)
@@ -83,6 +83,6 @@ func createHandleFunc(routerPath string, handlFunc func(http.ResponseWriter,*htt
 	return
 }
 
-func chkServerStatus(resp http.ResponseWriter, req *http.Request){
+func chkServerStatus(resp http.ResponseWriter, req *http.Request) {
 	resp.Write([]byte(strconv.Itoa(G_TCPServer.GetConnsCount())))
 }

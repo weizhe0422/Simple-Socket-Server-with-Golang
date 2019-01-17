@@ -18,13 +18,13 @@ func initArgs() {
 
 func main() {
 	var (
-		err      error
+		err error
 	)
 
 	initArgs()
 
 	if err = server.InitConfig(confFilePath); err != nil {
-		log.Fatal("failed to load configuration: ",err.Error())
+		log.Fatal("failed to load configuration: ", err.Error())
 		goto ERR
 	}
 	log.Println("Initial configuration success")
@@ -35,11 +35,10 @@ func main() {
 	server.InitApiServer()
 	log.Println("Initial API server success")
 
-
 	go server.G_ApiServer.StartToService()
 	server.G_TCPServer.StartToService()
 
-	for{
+	for {
 		time.Sleep(1 * time.Second)
 	}
 

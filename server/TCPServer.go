@@ -19,7 +19,7 @@ type TCPServer struct {
 	Sessions *sync.Map
 	Listener net.Listener
 	Connects map[string]int
-	Limiter *rate.Limiter
+	Limiter  *rate.Limiter
 }
 
 var (
@@ -31,14 +31,13 @@ func InitTCPServer() {
 		tcpSvr *TCPServer
 	)
 
-
 	tcpSvr = &TCPServer{
 		Method:   G_Config.ConnectMethod,
 		Address:  G_Config.ServerAddress,
 		Port:     G_Config.SocketPort,
 		Sessions: &sync.Map{},
 		Connects: make(map[string]int, 0),
-		Limiter: rate.NewLimiter(rate.Every(time.Duration(G_Config.RateLimitPerSecond)),G_Config.RateLimitBuffer),
+		Limiter:  rate.NewLimiter(rate.Every(time.Duration(G_Config.RateLimitPerSecond)), G_Config.RateLimitBuffer),
 	}
 
 	G_TCPServer = tcpSvr
@@ -49,7 +48,7 @@ func (t *TCPServer) StartToService() {
 	var (
 		err      error
 		listener net.Listener
-		ctx context.Context
+		ctx      context.Context
 	)
 	if listener, err = t.CreateListener(); err != nil {
 		goto ERR
@@ -131,7 +130,7 @@ func doReceiveMessage(conn net.Conn) {
 
 	sess = NewSession(&conn)
 	G_TCPServer.Sessions.Store(sess.GetSessionID(), sess)
-	log.Println("Address("+conn.RemoteAddr().String()+"):  Dial in: Session ID:"+sess.GetSessionID() )
+	log.Println("Address(" + conn.RemoteAddr().String() + "):  Dial in: Session ID:" + sess.GetSessionID())
 
 	defer func() {
 		conn.Close()
@@ -139,12 +138,12 @@ func doReceiveMessage(conn net.Conn) {
 	}()
 
 	for {
-		G_TCPServer.Connects[conn.RemoteAddr().String()] ++
+		G_TCPServer.Connects[conn.RemoteAddr().String()]++
 		log.Println("111")
 		msgBuf = make([]byte, G_Config.ReceiveBuffer)
 		if msgLength, err = conn.Read(msgBuf); err != nil {
-			if err == io.EOF{
-				log.Println("Address("+conn.RemoteAddr().String()+"): Close this connection! Session ID:"+sess.GetSessionID() )
+			if err == io.EOF {
+				log.Println("Address(" + conn.RemoteAddr().String() + "): Close this connection! Session ID:" + sess.GetSessionID())
 				return
 			}
 			log.Fatalln("failed to read message: ", err.Error())
@@ -153,7 +152,7 @@ func doReceiveMessage(conn net.Conn) {
 
 		fmt.Println("Received message: ", string(msgBuf[:msgLength]))
 		log.Println("Current Connection Count: ", G_TCPServer.GetConnsCount())
-		log.Println("Address("+conn.RemoteAddr().String()+"): "+strconv.Itoa(G_TCPServer.Connects[conn.RemoteAddr().String()]))
+		log.Println("Address(" + conn.RemoteAddr().String() + "): " + strconv.Itoa(G_TCPServer.Connects[conn.RemoteAddr().String()]))
 
 	}
 }
