@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"strconv"
@@ -120,24 +121,28 @@ func doReceiveMessage(conn net.Conn) {
 
 	sess = NewSession(&conn)
 	G_TCPServer.Sessions.Store(sess.GetSessionID(), sess)
+	log.Println("Address("+conn.RemoteAddr().String()+"):  Dial in: Session ID:"+sess.GetSessionID() )
 
 	defer func() {
 		conn.Close()
 		G_TCPServer.Sessions.Delete(sess.GetSessionID())
 	}()
 
-	log.Println(G_Config.ReceiveBuffer)
-
 	for {
 		G_TCPServer.Connects[conn.RemoteAddr().String()] ++
-
+		log.Println("111")
 		msgBuf = make([]byte, G_Config.ReceiveBuffer)
 		if msgLength, err = conn.Read(msgBuf); err != nil {
+			if err == io.EOF{
+				log.Println("Address("+conn.RemoteAddr().String()+"): Close this connection! Session ID:"+sess.GetSessionID() )
+				return
+			}
 			log.Fatalln("failed to read message: ", err.Error())
 			continue
 		}
+
 		fmt.Println("Received message: ", string(msgBuf[:msgLength]))
-		fmt.Println("GetConnsCount: ", G_TCPServer.GetConnsCount())
-		fmt.Println("Address("+conn.RemoteAddr().String()+"): "+strconv.Itoa(G_TCPServer.Connects[conn.RemoteAddr().String()]))
+		log.Println("Current Connection Count: ", G_TCPServer.GetConnsCount())
+		log.Println("Address("+conn.RemoteAddr().String()+"): "+strconv.Itoa(G_TCPServer.Connects[conn.RemoteAddr().String()]))
 	}
 }
