@@ -124,6 +124,7 @@ func doReceiveMessage(conn net.Conn) {
 		msgLength int
 		err       error
 		sess      *Session
+		sessInfo  SessionInfo
 	)
 
 	G_TCPServer.Connects[conn.RemoteAddr().String()] = 0
@@ -139,7 +140,11 @@ func doReceiveMessage(conn net.Conn) {
 
 	for {
 		G_TCPServer.Connects[conn.RemoteAddr().String()]++
-		log.Println("111")
+
+		sessInfo.RemoteAddress = conn.RemoteAddr().String()
+		sessInfo.ReqTime = time.Now()
+
+
 		msgBuf = make([]byte, G_Config.ReceiveBuffer)
 		if msgLength, err = conn.Read(msgBuf); err != nil {
 			if err == io.EOF {
@@ -151,8 +156,14 @@ func doReceiveMessage(conn net.Conn) {
 		}
 
 		fmt.Println("Received message: ", string(msgBuf[:msgLength]))
+		sessInfo.Data = string(msgBuf[:msgLength])
+		sessInfo.RespTime = time.Now()
+		sess.SetSetting(sess.GetSessionID(),sessInfo)
+
 		log.Println("Current Connection Count: ", G_TCPServer.GetConnsCount())
 		log.Println("Address(" + conn.RemoteAddr().String() + "): " + strconv.Itoa(G_TCPServer.Connects[conn.RemoteAddr().String()]))
+
+		log.Println(sess.GetSetting(sess.GetSessionID()))
 
 	}
 }

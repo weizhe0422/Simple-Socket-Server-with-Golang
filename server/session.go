@@ -3,14 +3,22 @@ package server
 import (
 	uuid "github.com/satori/go.uuid"
 	"net"
+	"time"
 )
+
+type SessionInfo struct {
+	ReqTime       time.Time
+	RespTime      time.Time
+	RemoteAddress string
+	Data          string
+}
 
 // Session struct
 type Session struct {
 	sID      string
 	uID      string
 	conn     *net.Conn
-	settings map[string]interface{}
+	settings map[string][]SessionInfo
 }
 
 // NewSession create a new session
@@ -20,7 +28,7 @@ func NewSession(conn *net.Conn) *Session {
 		sID:      id.String(),
 		uID:      "",
 		conn:     conn,
-		settings: make(map[string]interface{}),
+		settings: make(map[string][]SessionInfo,0),
 	}
 
 	return session
@@ -62,6 +70,6 @@ func (s *Session) GetSetting(key string) interface{} {
 }
 
 // SetSetting set setting
-func (s *Session) SetSetting(key string, value interface{}) {
-	s.settings[key] = value
+func (s *Session) SetSetting(key string, value SessionInfo) {
+	s.settings[key] = append(s.settings[key],value)
 }
