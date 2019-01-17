@@ -15,6 +15,8 @@ type Config struct {
 	ReceiveBuffer      int    `json:"receiveBuffer"`
 	ApiSvrReadTimeOut  int    `json:"apiSvrReadTimeOut"`
 	ApiSvrWriteTimeOut int    `json:"apiSvrWriteTimeOut"`
+	RateLimitPerSecond int    `json:"rateLimitPerSecond"`
+	RateLimitBuffer    int    `json:"rateLimitBuffer"`
 }
 
 var (

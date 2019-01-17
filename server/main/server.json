@@ -6,6 +6,8 @@
   "httpPort": 4000,
   "serverStatusPath": "/server/status",
   "apiSvrReadTimeOut": 5000,
-  "apiSvrWriteTimeOut": 5000
+  "apiSvrWriteTimeOut": 5000,
+  "rateLimitPerSecond": 1,
+  "rateLimitBuffer": 5
 
 }

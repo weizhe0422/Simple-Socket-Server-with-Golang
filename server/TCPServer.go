@@ -1,12 +1,15 @@
 package server
 
 import (
+	"context"
 	"fmt"
+	"golang.org/x/time/rate"
 	"io"
 	"log"
 	"net"
 	"strconv"
 	"sync"
+	"time"
 )
 
 type TCPServer struct {
@@ -16,6 +19,7 @@ type TCPServer struct {
 	Sessions *sync.Map
 	Listener net.Listener
 	Connects map[string]int
+	Limiter *rate.Limiter
 }
 
 var (
@@ -27,12 +31,14 @@ func InitTCPServer() {
 		tcpSvr *TCPServer
 	)
 
+
 	tcpSvr = &TCPServer{
 		Method:   G_Config.ConnectMethod,
 		Address:  G_Config.ServerAddress,
 		Port:     G_Config.SocketPort,
 		Sessions: &sync.Map{},
 		Connects: make(map[string]int, 0),
+		Limiter: rate.NewLimiter(rate.Every(time.Duration(G_Config.RateLimitPerSecond)),G_Config.RateLimitBuffer),
 	}
 
 	G_TCPServer = tcpSvr
@@ -43,6 +49,7 @@ func (t *TCPServer) StartToService() {
 	var (
 		err      error
 		listener net.Listener
+		ctx context.Context
 	)
 	if listener, err = t.CreateListener(); err != nil {
 		goto ERR
@@ -51,7 +58,10 @@ func (t *TCPServer) StartToService() {
 	log.Println("Create TCP listener success")
 
 	log.Println("Start to accept request and do action...")
+
+	ctx, _ = context.WithCancel(context.TODO())
 	for {
+		t.Limiter.Wait(ctx)
 		t.ListenAndAction(listener, doReceiveMessage)
 	}
 
@@ -144,5 +154,6 @@ func doReceiveMessage(conn net.Conn) {
 		fmt.Println("Received message: ", string(msgBuf[:msgLength]))
 		log.Println("Current Connection Count: ", G_TCPServer.GetConnsCount())
 		log.Println("Address("+conn.RemoteAddr().String()+"): "+strconv.Itoa(G_TCPServer.Connects[conn.RemoteAddr().String()]))
+
 	}
 }
