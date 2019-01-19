@@ -56,8 +56,10 @@ func InitApiServer() {
 
 func (a *ApiServer) StartToService() (err error) {
 	var (
-		listener net.Listener
-		mux      *http.ServeMux
+		listener      net.Listener
+		mux           *http.ServeMux
+		staticDir     http.Dir
+		staticHandler http.Handler
 	)
 	if listener, err = a.CreateListener(); err != nil {
 		return
@@ -66,6 +68,12 @@ func (a *ApiServer) StartToService() (err error) {
 	log.Println("create API server listener success")
 
 	mux = createHandleFunc(G_Config.ServerStatusPath, chkServerStatus)
+
+	staticDir = http.Dir(G_Config.WebRoot)
+	staticHandler = http.FileServer(staticDir)
+	mux.Handle("/", http.StripPrefix("/", staticHandler))
+	log.Println("staticDir", staticDir)
+
 	a.httpSvr.Handler = mux
 	log.Println("create API server HandleFunc success")
 
@@ -102,9 +110,9 @@ func chkServerStatus(resp http.ResponseWriter, req *http.Request) (err error) {
 		respJson      []byte
 	)
 	respSvrStatus = &ServerStatus{
-		ConnCount: G_TCPServer.GetConnsCount(),
-		SessInfoSumm:G_TCPServer.GetServerSummry(),
-		ConnHist:  G_TCPServer.GetConnHistALL(),
+		ConnCount:    G_TCPServer.GetConnsCount(),
+		SessInfoSumm: G_TCPServer.GetServerSummry(),
+		ConnHist:     G_TCPServer.GetConnHistALL(),
 	}
 
 	resp.Header().Set("Content-Type", "application/json;charset=UTF-8")

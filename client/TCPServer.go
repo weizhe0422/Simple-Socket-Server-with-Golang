@@ -20,7 +20,6 @@ func InitTCPServer(ConnMethod string, ConnPort int) (err error) {
 		tcpSvr *TCPServer
 	)
 
-
 	tcpSvr = &TCPServer{
 		Method: ConnMethod,
 		Port:   ConnPort,
@@ -43,7 +42,7 @@ func (t *TCPServer) CreateListener(ListenAddress string) (listener net.Listener,
 func (t *TCPServer) CreateDialer(ListenAddress string) (conn net.Conn, err error) {
 
 	if conn, err = net.Dial(G_TCPServer.Method, ListenAddress+":"+strconv.Itoa(G_TCPServer.Port)); err != nil {
-		log.Println(ListenAddress+":"+strconv.Itoa(G_TCPServer.Port))
+		log.Println(ListenAddress + ":" + strconv.Itoa(G_TCPServer.Port))
 		log.Fatal("failed to create a connector:", err.Error())
 	}
 	return

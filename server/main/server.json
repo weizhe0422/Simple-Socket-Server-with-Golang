@@ -8,6 +8,6 @@
   "apiSvrReadTimeOut": 5000,
   "apiSvrWriteTimeOut": 5000,
   "rateLimitPerSecond": 1,
-  "rateLimitBuffer": 5
-
+  "rateLimitBuffer": 5,
+  "webRoot": "./webPage"
 }

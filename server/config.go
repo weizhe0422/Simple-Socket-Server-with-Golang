@@ -17,6 +17,7 @@ type Config struct {
 	ApiSvrWriteTimeOut int    `json:"apiSvrWriteTimeOut"`
 	RateLimitPerSecond int    `json:"rateLimitPerSecond"`
 	RateLimitBuffer    int    `json:"rateLimitBuffer"`
+	WebRoot            string `json:"webRoot"`
 }
 
 var (

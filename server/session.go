@@ -11,6 +11,7 @@ type SessionInfo struct {
 	RespTime      time.Time
 	RemoteAddress string
 	Data          string
+	Duration      float64
 }
 
 // Session struct

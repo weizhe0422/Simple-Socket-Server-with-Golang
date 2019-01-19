@@ -12,26 +12,26 @@ import (
 	"time"
 )
 
-type ServerInfoSummary struct {
-	SessionInfo map[string]int
-}
-
 type ServerStatus struct {
-	ConnCount int
-	SessInfoSumm map[string]int
-	ConnHist  map[string][]SessionInfo
+	ConnCount    int
+	SessInfoSumm map[string]SessionReqInfo
+	ConnHist     map[string][]SessionInfo
 }
-
+type SessionReqInfo struct {
+	RequestCount int
+	RequestRate float64
+	TimePerReq float64
+}
 type TCPServer struct {
-	Method    string
-	Address   string
-	Port      int
-	Sessions  *sync.Map
-	Listener  net.Listener
-	Connects  map[string]int
-	Limiter   *rate.Limiter
-	SvrStatus *ServerStatus
-	SessInfoSumm map[string]int
+	Method       string
+	Address      string
+	Port         int
+	Sessions     *sync.Map
+	Listener     net.Listener
+	Connects     map[string]int
+	Limiter      *rate.Limiter
+	SvrStatus    *ServerStatus
+	SessInfoSumm map[string]SessionReqInfo
 }
 
 var (
@@ -54,7 +54,7 @@ func InitTCPServer() {
 			ConnCount: 0,
 			ConnHist:  make(map[string][]SessionInfo, 0),
 		},
-		SessInfoSumm: make(map[string]int,0),
+		SessInfoSumm: make(map[string]SessionReqInfo,0),
 	}
 
 	G_TCPServer = tcpSvr
@@ -138,15 +138,31 @@ func (t *TCPServer) GetConnHistALL() (connHist map[string][]SessionInfo) {
 	return t.SvrStatus.ConnHist
 }
 
+func (t *TCPServer) GetProcTimeSum(sessionId string) float64 {
+	var(
+		procTimeSum float64
+	)
+
+	for _, infoItem := range t.GetConnHistBySessId(sessionId){
+		procTimeSum += infoItem.Duration
+	}
+
+	return procTimeSum
+}
+
 func (t *TCPServer) SetConnHist(sessionId string, data SessionInfo) {
 	t.SvrStatus.ConnHist[sessionId] = append(t.SvrStatus.ConnHist[sessionId], data)
 }
 
 func (t *TCPServer) UpdateServerSummry(sessionId string, reqCnt int) {
-	t.SessInfoSumm[sessionId] = reqCnt
+	t.SessInfoSumm[sessionId] = SessionReqInfo{
+		RequestCount:reqCnt,
+		RequestRate: float64(reqCnt)/t.GetProcTimeSum(sessionId),
+		TimePerReq: t.GetProcTimeSum(sessionId)/float64(reqCnt),
+	}
 }
 
-func (t *TCPServer) GetServerSummry() (map[string]int){
+func (t *TCPServer) GetServerSummry() map[string]SessionReqInfo {
 	return t.SessInfoSumm
 }
 
@@ -188,14 +204,17 @@ func doReceiveMessage(conn net.Conn) {
 			log.Fatalln("failed to read message: ", err.Error())
 			continue
 		}
+		sessInfo.ReqTime = time.Now()
 
 		fmt.Println("Received message: ", string(msgBuf[:msgLength]))
 
 		sessInfo.Data = string(msgBuf[:msgLength])
 		sessInfo.RespTime = time.Now()
+		sessInfo.Duration = sessInfo.RespTime.Sub(sessInfo.ReqTime).Seconds()
+
 		sess.SetSetting(sessionID, sessInfo)
 		G_TCPServer.SetConnHist(sessionID, sessInfo)
-		G_TCPServer.UpdateServerSummry(sessionID,G_TCPServer.Connects[conn.RemoteAddr().String()])
+		G_TCPServer.UpdateServerSummry(sessionID, G_TCPServer.Connects[conn.RemoteAddr().String()])
 
 		log.Println("Current Connection Count: ", G_TCPServer.GetConnsCount())
 		fmt.Println("Address(" + conn.RemoteAddr().String() + "): " + strconv.Itoa(G_TCPServer.Connects[conn.RemoteAddr().String()]))
