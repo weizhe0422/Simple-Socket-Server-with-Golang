@@ -24,12 +24,12 @@ func initArgs() {
 
 func main() {
 	var (
-		err  error
-		conn net.Conn
-		inputReader *bufio.Reader
+		err                        error
+		conn                       net.Conn
+		inputReader                *bufio.Reader
 		clientName, clientNameTrim string
-		inputMsg, inputMsgTrim string
-		respString *bytes.Buffer
+		inputMsg, inputMsgTrim     string
+		respString                 *bytes.Buffer
 	)
 
 	initArgs()
@@ -39,7 +39,6 @@ func main() {
 		goto ERR
 	}
 	log.Println("Initial configuration success")
-
 
 	if err = client.InitTCPServer(client.G_Config.ConnectMethod, client.G_Config.ConnectionPort); err != nil {
 		log.Fatal("failed to initial TCP server: ")
@@ -53,31 +52,30 @@ func main() {
 	defer conn.Close()
 	log.Println("Success to dial to " + client.G_Config.ClientAddress + ":" + strconv.Itoa(client.G_Config.ConnectionPort))
 
-
 	inputReader = bufio.NewReader(os.Stdin)
 	fmt.Println("Input your name: ")
-	if clientName, err = inputReader.ReadString('\n'); err!=nil{
+	if clientName, err = inputReader.ReadString('\n'); err != nil {
 		log.Fatal("failed to get client's name: ")
 		return
 	}
-	clientNameTrim = strings.Trim(clientName,"\r\n")
+	clientNameTrim = strings.Trim(clientName, "\r\n")
 
-	for{
+	for {
 		fmt.Println("Start to send message until you type quit to quit:")
 		respString = bytes.NewBufferString("")
 
 		for {
-			if inputMsg, err = inputReader.ReadString('\n'); err!=nil{
+			if inputMsg, err = inputReader.ReadString('\n'); err != nil {
 				log.Println("failed to read string from user:", err.Error())
 				continue
 			}
-			inputMsgTrim = strings.Trim(inputMsg,"\r\n")
+			inputMsgTrim = strings.Trim(inputMsg, "\r\n")
 
-			if (inputMsgTrim == "quit"){
+			if inputMsgTrim == "quit" {
 				break
 			}
 
-			if (inputMsgTrim == "bye"){
+			if inputMsgTrim == "bye" {
 				return
 			}
 
@@ -85,7 +83,6 @@ func main() {
 		}
 		conn.Write([]byte(clientNameTrim + ":" + respString.String()))
 	}
-
 
 ERR:
 	log.Fatalln(err.Error())

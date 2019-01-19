@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Socket Server Status</title>
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+</head>
+<body onload="ShowTime()">
+<div class="container-fluid">
+    <!--Page Head-->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="page-header">
+                <h1>Socket Server Status Dashboard
+                    <small>written with Golang. Author: weizhe0422</small>
+                </h1>
+            </div>
+        </div>
+    </div>
+
+    <!--功能按鈕-->
+    <div class="row">
+        <div class="col-md-12">
+            <button type="button" class="btn btn-primary" id="refresh">Refresh</button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <div id="refreshTime"></div>
+        </div>
+    </div>
+
+    <!--任務列表-->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-default" style="margin-top: 20px;">
+                <div class="panel-body">
+                    <table id="job-list" class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>Connection Count</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td class="connection-count"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+
+                    <table id="session-status-info" class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>Session ID</th>
+                            <th>Request Count</th>
+                            <th>Request Rate (Request Cnt./sec.)</th>
+                            <th>Time Per Request (sec.)</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td class="session-id"></td>
+                            <td class="request-count"></td>
+                            <td class="request-rate"></td>
+                            <td class="time-per-request"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+
+                    <table id="session-status-detail" class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>Session ID</th>
+                            <th>Request Time</th>
+                            <th>Response Time</th>
+                            <th>Remote Address</th>
+                            <th>Message</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td class="session-id"></td>
+                            <td class="request-time"></td>
+                            <td class="response-time"></td>
+                            <td class="remote-address"></td>
+                            <td class="message"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+    <script>
+        function ShowTime(){
+            var curTime = new Date();
+            var refreshTime = curTime.getFullYear()+"/"+curTime.getMonth()+1+"/"+curTime.getDate()+"  "+curTime.getHours()+":"+curTime.getMinutes()+":"+curTime.getSeconds()
+            document.getElementById('refreshTime').innerHTML = "Refresh Time:" + refreshTime
+        }
+
+        $(document).ready(function () {
+            reloadPage()
+
+            $("#refresh").on('click',reloadPage())
+
+
+            function reloadPage(){
+                $.ajax({
+                    url:"/server/status",
+                    type:'get',
+                    success:function(value){
+                        $('#job-list tbody').empty()
+                        var tr = $("<tr>")
+                        $.each(value,function(idx,obj){
+                            if(idx=="ConnCount"){
+                                tr.append($('<td class="connection-count">').html(obj))
+                            }
+                        })
+                        $('#job-list').append(tr)
+
+
+                        $('#session-status-info tbody').empty()
+                        $.each(value,function(idx,obj){
+                            if(idx=="SessInfoSumm"){
+                                $.each(obj,function (idx2, obj2) {
+                                    var tr1 = $("<tr>")
+                                    tr1.append($('<td class="session-id">').html(idx2))
+                                    $.each(obj2,function (idx3, obj3) {
+                                        tr1.append($('<td class="request-count">').html(obj3))
+                                        $('#session-status-info').append(tr1)
+                                    })
+                                })
+                            }
+                        })
+
+                        $('#session-status-detail tbody').empty()
+                        $.each(value,function(idx,obj){
+                            if(idx=="ConnHist"){
+                                $.each(obj,function (idx2, obj2) {
+                                    $.each(obj2,function (idx3, obj3) {
+                                        var tr1 = $("<tr>")
+                                        tr1.append($('<td class="session-id">').html(idx2))
+                                        $.each(obj3,function (idx4, obj4) {
+                                            if (idx4=="ReqTime"){
+                                                tr1.append($('<td class="request-time">').html(obj4))
+                                            }else if (idx4=="RespTime"){
+                                                tr1.append($('<td class="response-time">').html(obj4))
+                                            }else if (idx4=="RemoteAddress"){
+                                                tr1.append($('<td class="remote-address">').html(obj4))
+                                            }else if (idx4=="Data"){
+                                                tr1.append($('<td class="message">').html(obj4))
+                                            }
+                                            $('#session-status-detail').append(tr1)
+                                        })
+                                    })
+
+                                })
+
+                            }
+                        })
+                    }
+                })
+            }
+        })
+    </script>
+</body>
+</html>
+
