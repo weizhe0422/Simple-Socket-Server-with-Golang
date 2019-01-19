@@ -28,7 +28,7 @@ func NewSession(conn *net.Conn) *Session {
 		sID:      id.String(),
 		uID:      "",
 		conn:     conn,
-		settings: make(map[string][]SessionInfo,0),
+		settings: make(map[string][]SessionInfo, 0),
 	}
 
 	return session
@@ -71,5 +71,5 @@ func (s *Session) GetSetting(key string) interface{} {
 
 // SetSetting set setting
 func (s *Session) SetSetting(key string, value SessionInfo) {
-	s.settings[key] = append(s.settings[key],value)
+	s.settings[key] = append(s.settings[key], value)
 }

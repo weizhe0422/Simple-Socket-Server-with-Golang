@@ -12,14 +12,20 @@ import (
 	"time"
 )
 
+type ServerStatus struct {
+	ConnCount int
+	ConnHist  map[string][]SessionInfo
+}
+
 type TCPServer struct {
-	Method   string
-	Address  string
-	Port     int
-	Sessions *sync.Map
-	Listener net.Listener
-	Connects map[string]int
-	Limiter  *rate.Limiter
+	Method    string
+	Address   string
+	Port      int
+	Sessions  *sync.Map
+	Listener  net.Listener
+	Connects  map[string]int
+	Limiter   *rate.Limiter
+	SvrStatus *ServerStatus
 }
 
 var (
@@ -38,6 +44,10 @@ func InitTCPServer() {
 		Sessions: &sync.Map{},
 		Connects: make(map[string]int, 0),
 		Limiter:  rate.NewLimiter(rate.Every(time.Duration(G_Config.RateLimitPerSecond)), G_Config.RateLimitBuffer),
+		SvrStatus: &ServerStatus{
+			ConnCount: 0,
+			ConnHist:  make(map[string][]SessionInfo, 0),
+		},
 	}
 
 	G_TCPServer = tcpSvr
@@ -109,13 +119,20 @@ func (t *TCPServer) GetConnsCount() int {
 	return count
 }
 
-func (t *TCPServer) GetConnHist() int {
-	var count int
-	t.Sessions.Range(func(k, v interface{}) bool {
-		count++
-		return true
-	})
-	return count
+func (t *TCPServer) GetConnHistBySessId(sessionId string) (connHist []SessionInfo) {
+	if connHist, ok := t.SvrStatus.ConnHist[sessionId]; ok {
+		return connHist
+	}
+
+	return nil
+}
+
+func (t *TCPServer) GetConnHistALL() (connHist map[string][]SessionInfo) {
+	return t.SvrStatus.ConnHist
+}
+
+func (t *TCPServer) SetConnHist(sessionId string, data SessionInfo) {
+	t.SvrStatus.ConnHist[sessionId] = append(t.SvrStatus.ConnHist[sessionId], data)
 }
 
 func doReceiveMessage(conn net.Conn) {
@@ -125,17 +142,20 @@ func doReceiveMessage(conn net.Conn) {
 		err       error
 		sess      *Session
 		sessInfo  SessionInfo
+		sessionID string
 	)
 
 	G_TCPServer.Connects[conn.RemoteAddr().String()] = 0
 
 	sess = NewSession(&conn)
-	G_TCPServer.Sessions.Store(sess.GetSessionID(), sess)
+	sessionID = sess.GetSessionID()
+
+	G_TCPServer.Sessions.Store(sessionID, sess)
 	log.Println("Address(" + conn.RemoteAddr().String() + "):  Dial in: Session ID:" + sess.GetSessionID())
 
 	defer func() {
 		conn.Close()
-		G_TCPServer.Sessions.Delete(sess.GetSessionID())
+		G_TCPServer.Sessions.Delete(sessionID)
 	}()
 
 	for {
@@ -144,11 +164,10 @@ func doReceiveMessage(conn net.Conn) {
 		sessInfo.RemoteAddress = conn.RemoteAddr().String()
 		sessInfo.ReqTime = time.Now()
 
-
 		msgBuf = make([]byte, G_Config.ReceiveBuffer)
 		if msgLength, err = conn.Read(msgBuf); err != nil {
 			if err == io.EOF {
-				log.Println("Address(" + conn.RemoteAddr().String() + "): Close this connection! Session ID:" + sess.GetSessionID())
+				log.Println("Address(" + conn.RemoteAddr().String() + "): Close this connection! Session ID:" + sessionID)
 				return
 			}
 			log.Fatalln("failed to read message: ", err.Error())
@@ -156,14 +175,16 @@ func doReceiveMessage(conn net.Conn) {
 		}
 
 		fmt.Println("Received message: ", string(msgBuf[:msgLength]))
+
 		sessInfo.Data = string(msgBuf[:msgLength])
 		sessInfo.RespTime = time.Now()
-		sess.SetSetting(sess.GetSessionID(),sessInfo)
+		sess.SetSetting(sessionID, sessInfo)
+		G_TCPServer.SetConnHist(sessionID, sessInfo)
 
 		log.Println("Current Connection Count: ", G_TCPServer.GetConnsCount())
-		log.Println("Address(" + conn.RemoteAddr().String() + "): " + strconv.Itoa(G_TCPServer.Connects[conn.RemoteAddr().String()]))
+		fmt.Println("Address(" + conn.RemoteAddr().String() + "): " + strconv.Itoa(G_TCPServer.Connects[conn.RemoteAddr().String()]))
 
-		log.Println(sess.GetSetting(sess.GetSessionID()))
+		log.Println(sess.GetSetting(sessionID))
 
 	}
 }
