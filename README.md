@@ -5,5 +5,6 @@
 - [X] TCP server can accept multiple connections at the same time
 - [ ] At least accept 30 requests per second.
 - [ ] Mount a HTTP endpoint on your server and display some statistics: current connection count, current request rate, processed request count, remaing jobs...etc
+![RespWithReqCnt](https://github.com/weizhe0422/TCPServerWithGolang/blob/develop/img/RespWithReqCnt.png)
 - [ ] consider the external API could be unreachable or unavailable.
 - [ ] show strength in programming. e.g., tests, documents, user interface, architecture.
