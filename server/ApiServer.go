@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"github.com/pkg/errors"
 	"log"
 	"net"
@@ -8,6 +9,18 @@ import (
 	"strconv"
 	"time"
 )
+
+type errHandler func(http.ResponseWriter, *http.Request) error
+
+type userError string
+
+func (e userError) Error() string {
+	return e.Message()
+}
+
+func (e userError) Message() string {
+	return string(e)
+}
 
 type ApiServer struct {
 	httpSvr  *http.Server
@@ -75,14 +88,66 @@ func (a *ApiServer) Stop(reason string) {
 	a.StopCh <- errors.New(reason)
 }
 
-func createHandleFunc(routerPath string, handlFunc func(http.ResponseWriter, *http.Request)) (mux *http.ServeMux) {
+func createHandleFunc(routerPath string, handlFunc errHandler) (mux *http.ServeMux) {
 
 	mux = http.NewServeMux()
-	mux.HandleFunc(routerPath, handlFunc)
+	mux.HandleFunc(routerPath, errWrapper(handlFunc))
 
 	return
 }
 
-func chkServerStatus(resp http.ResponseWriter, req *http.Request) {
-	resp.Write([]byte(strconv.Itoa(G_TCPServer.GetConnsCount())))
+func chkServerStatus(resp http.ResponseWriter, req *http.Request) (err error) {
+	var (
+		respSvrStatus *ServerStatus
+		respJson      []byte
+	)
+	respSvrStatus = &ServerStatus{
+		ConnCount: G_TCPServer.GetConnsCount(),
+		SessInfoSumm:G_TCPServer.GetServerSummry(),
+		ConnHist:  G_TCPServer.GetConnHistALL(),
+	}
+
+	resp.Header().Set("Content-Type", "application/json;charset=UTF-8")
+
+	if respSvrStatus == nil {
+		return userError("There is no connection history")
+	}
+
+	if respJson, err = json.Marshal(respSvrStatus); err != nil {
+		return userError("Failed to convert connection history as JSON format")
+	}
+	resp.WriteHeader(http.StatusOK)
+	resp.Write(respJson)
+	return nil
+
+	//resp.Write([]byte(strconv.Itoa(G_TCPServer.GetConnsCount())))
+}
+
+func errWrapper(handler errHandler) func(http.ResponseWriter, *http.Request) {
+	var (
+		code int
+	)
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Print(r)
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			}
+		}()
+
+		err := handler(w, r)
+		if userErr, ok := err.(userError); ok {
+			http.Error(w, userErr.Message(), http.StatusBadRequest)
+			log.Println("user error")
+		}
+
+		//code := http.StatusOK
+		if err != nil {
+			code = http.StatusInternalServerError
+		}
+
+		http.Error(w, http.StatusText(code), code)
+
+	}
 }
