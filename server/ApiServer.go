@@ -103,6 +103,7 @@ func chkServerStatus(resp http.ResponseWriter, req *http.Request) (err error) {
 	)
 	respSvrStatus = &ServerStatus{
 		ConnCount: G_TCPServer.GetConnsCount(),
+		SessInfoSumm:G_TCPServer.GetServerSummry(),
 		ConnHist:  G_TCPServer.GetConnHistALL(),
 	}
 

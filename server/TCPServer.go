@@ -12,8 +12,13 @@ import (
 	"time"
 )
 
+type ServerInfoSummary struct {
+	SessionInfo map[string]int
+}
+
 type ServerStatus struct {
 	ConnCount int
+	SessInfoSumm map[string]int
 	ConnHist  map[string][]SessionInfo
 }
 
@@ -26,6 +31,7 @@ type TCPServer struct {
 	Connects  map[string]int
 	Limiter   *rate.Limiter
 	SvrStatus *ServerStatus
+	SessInfoSumm map[string]int
 }
 
 var (
@@ -48,6 +54,7 @@ func InitTCPServer() {
 			ConnCount: 0,
 			ConnHist:  make(map[string][]SessionInfo, 0),
 		},
+		SessInfoSumm: make(map[string]int,0),
 	}
 
 	G_TCPServer = tcpSvr
@@ -135,6 +142,14 @@ func (t *TCPServer) SetConnHist(sessionId string, data SessionInfo) {
 	t.SvrStatus.ConnHist[sessionId] = append(t.SvrStatus.ConnHist[sessionId], data)
 }
 
+func (t *TCPServer) UpdateServerSummry(sessionId string, reqCnt int) {
+	t.SessInfoSumm[sessionId] = reqCnt
+}
+
+func (t *TCPServer) GetServerSummry() (map[string]int){
+	return t.SessInfoSumm
+}
+
 func doReceiveMessage(conn net.Conn) {
 	var (
 		msgBuf    []byte
@@ -180,6 +195,7 @@ func doReceiveMessage(conn net.Conn) {
 		sessInfo.RespTime = time.Now()
 		sess.SetSetting(sessionID, sessInfo)
 		G_TCPServer.SetConnHist(sessionID, sessInfo)
+		G_TCPServer.UpdateServerSummry(sessionID,G_TCPServer.Connects[conn.RemoteAddr().String()])
 
 		log.Println("Current Connection Count: ", G_TCPServer.GetConnsCount())
 		fmt.Println("Address(" + conn.RemoteAddr().String() + "): " + strconv.Itoa(G_TCPServer.Connects[conn.RemoteAddr().String()]))
