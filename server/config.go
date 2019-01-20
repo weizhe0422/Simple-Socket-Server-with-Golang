@@ -7,10 +7,17 @@ import (
 )
 
 type Config struct {
-	ConnectMethod  string `json:"connectMethod"`
-	ServerAddress  string `json:"serverAddress"`
-	ConnectionPort int    `json:"connectionPort"`
-	ReceiveBuffer  int    `json:"receiveBuffer"`
+	ConnectMethod      string `json:"connectMethod"`
+	ServerAddress      string `json:"serverAddress"`
+	SocketPort         int    `json:"socketPort"`
+	HttpPort           int    `json:"httpPort"`
+	ServerStatusPath   string `json:"serverStatusPath"`
+	ReceiveBuffer      int    `json:"receiveBuffer"`
+	ApiSvrReadTimeOut  int    `json:"apiSvrReadTimeOut"`
+	ApiSvrWriteTimeOut int    `json:"apiSvrWriteTimeOut"`
+	RateLimitPerSecond int    `json:"rateLimitPerSecond"`
+	RateLimitBuffer    int    `json:"rateLimitBuffer"`
+	WebRoot            string `json:"webRoot"`
 }
 
 var (
