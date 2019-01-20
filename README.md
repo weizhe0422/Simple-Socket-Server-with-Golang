@@ -9,6 +9,7 @@ Golang 1.9 and above
 `go get -u -v github.com/weizhe0422/Simple-Socket-Server-with-Golang`
 
 ## Features
+![SystemStructure](https://github.com/weizhe0422/Simple-Socket-Server-with-Golang/blob/master/img/SystemStructure.png)
 ### Server
 - [X] Server can serve multiple connections at the same time.
 - [X] Configurable setting.
