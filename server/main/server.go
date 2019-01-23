@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"github.com/weizhe0422/TCPServerWithGolang/server"
+	"github.com/weizhe0422/Simple-Socket-Server-with-Golang/server"
 	"log"
 	"time"
 )
