@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"github.com/weizhe0422/TCPServerWithGolang/client"
+	"github.com/weizhe0422/Simple-Socket-Server-with-Golang/client"
 	"log"
 	"net"
 	"os"
