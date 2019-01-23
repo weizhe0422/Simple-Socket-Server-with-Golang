@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"github.com/weizhe0422/TCPServerWithGolang/client"
+	"github.com/weizhe0422/Simple-Socket-Server-with-Golang/client"
 	"log"
 	"net"
 	"os"
@@ -71,11 +71,11 @@ func main() {
 			}
 			inputMsgTrim = strings.Trim(inputMsg, "\r\n")
 
-			if inputMsgTrim == "quit" {
+			if inputMsgTrim == "send" {
 				break
 			}
 
-			if inputMsgTrim == "bye" {
+			if inputMsgTrim == "quit" || inputMsgTrim == "bye" {
 				return
 			}
 
