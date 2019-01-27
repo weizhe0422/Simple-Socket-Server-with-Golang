@@ -18,7 +18,7 @@ func initArgs() {
 
 func main() {
 	var (
-		err error
+		err    error
 		apiSvr *server.ApiServer
 	)
 

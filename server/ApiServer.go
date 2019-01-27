@@ -31,7 +31,7 @@ type ApiServer struct {
 	StopCh   chan error
 }
 
-func InitApiServer() (apiServer *ApiServer ){
+func InitApiServer() (apiServer *ApiServer) {
 
 	apiServer = &ApiServer{
 		httpSvr: &http.Server{

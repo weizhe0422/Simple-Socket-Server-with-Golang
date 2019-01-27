@@ -72,7 +72,7 @@ func main() {
 			inputMsgTrim = strings.Trim(inputMsg, "\r\n")
 
 			respString.Write([]byte(inputMsgTrim))
-			
+
 			if inputMsgTrim == "quit" {
 				return
 			}
