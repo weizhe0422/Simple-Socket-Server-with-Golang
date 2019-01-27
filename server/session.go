@@ -2,6 +2,7 @@ package server
 
 import (
 	uuid "github.com/satori/go.uuid"
+	"log"
 	"net"
 	"time"
 )
@@ -24,7 +25,15 @@ type Session struct {
 
 // NewSession create a new session
 func NewSession(conn *net.Conn) *Session {
-	id, _ := uuid.NewV4()
+	var (
+		id  uuid.UUID
+		err error
+	)
+	if id, err = uuid.NewV4(); err != nil {
+		log.Println("failed to create uuid: ", err.Error())
+		return nil
+	}
+
 	session := &Session{
 		sID:      id.String(),
 		uID:      "",
@@ -62,11 +71,16 @@ func (s *Session) SetConn(conn *net.Conn) {
 
 // GetSetting get setting
 func (s *Session) GetSetting(key string) interface{} {
+	var (
+		v  []SessionInfo
+		ok bool
+	)
 
-	if v, ok := s.settings[key]; ok {
+	if v, ok = s.settings[key]; ok {
 		return v
 	}
 
+	log.Println("failed to get value of ", s.settings[key])
 	return nil
 }
 

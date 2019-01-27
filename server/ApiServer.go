@@ -31,14 +31,7 @@ type ApiServer struct {
 	StopCh   chan error
 }
 
-var (
-	G_ApiServer *ApiServer
-)
-
-func InitApiServer() {
-	var (
-		apiServer *ApiServer
-	)
+func InitApiServer() (apiServer *ApiServer ){
 
 	apiServer = &ApiServer{
 		httpSvr: &http.Server{
@@ -51,7 +44,7 @@ func InitApiServer() {
 		StopCh:  make(chan error),
 	}
 
-	G_ApiServer = apiServer
+	return apiServer
 }
 
 func (a *ApiServer) StartToService() (err error) {

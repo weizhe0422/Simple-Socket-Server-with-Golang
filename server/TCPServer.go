@@ -19,8 +19,8 @@ type ServerStatus struct {
 }
 type SessionReqInfo struct {
 	RequestCount int
-	RequestRate float64
-	TimePerReq float64
+	RequestRate  float64
+	TimePerReq   float64
 }
 type TCPServer struct {
 	Method       string
@@ -54,7 +54,7 @@ func InitTCPServer() {
 			ConnCount: 0,
 			ConnHist:  make(map[string][]SessionInfo, 0),
 		},
-		SessInfoSumm: make(map[string]SessionReqInfo,0),
+		SessInfoSumm: make(map[string]SessionReqInfo, 0),
 	}
 
 	G_TCPServer = tcpSvr
@@ -68,7 +68,7 @@ func (t *TCPServer) StartToService() {
 		ctx      context.Context
 	)
 	if listener, err = t.CreateListener(); err != nil {
-		goto ERR
+		log.Println("failed to create listener: ", err.Error())
 	}
 	t.Listener = listener
 	log.Println("Create TCP listener success")
@@ -76,13 +76,11 @@ func (t *TCPServer) StartToService() {
 	log.Println("Start to accept request and do action...")
 
 	ctx, _ = context.WithCancel(context.TODO())
+
 	for {
 		t.Limiter.Wait(ctx)
 		t.ListenAndAction(listener, doReceiveMessage)
 	}
-
-ERR:
-	log.Fatalln(err.Error())
 }
 
 func (t *TCPServer) CreateListener() (listener net.Listener, err error) {
@@ -127,7 +125,11 @@ func (t *TCPServer) GetConnsCount() int {
 }
 
 func (t *TCPServer) GetConnHistBySessId(sessionId string) (connHist []SessionInfo) {
-	if connHist, ok := t.SvrStatus.ConnHist[sessionId]; ok {
+	var (
+		ok bool
+	)
+
+	if connHist, ok = t.SvrStatus.ConnHist[sessionId]; ok {
 		return connHist
 	}
 
@@ -139,11 +141,12 @@ func (t *TCPServer) GetConnHistALL() (connHist map[string][]SessionInfo) {
 }
 
 func (t *TCPServer) GetProcTimeSum(sessionId string) float64 {
-	var(
+	var (
 		procTimeSum float64
+		infoItem    SessionInfo
 	)
 
-	for _, infoItem := range t.GetConnHistBySessId(sessionId){
+	for _, infoItem = range t.GetConnHistBySessId(sessionId) {
 		procTimeSum += infoItem.Duration
 	}
 
@@ -156,9 +159,9 @@ func (t *TCPServer) SetConnHist(sessionId string, data SessionInfo) {
 
 func (t *TCPServer) UpdateServerSummry(sessionId string, reqCnt int) {
 	t.SessInfoSumm[sessionId] = SessionReqInfo{
-		RequestCount:reqCnt,
-		RequestRate: float64(reqCnt)/t.GetProcTimeSum(sessionId),
-		TimePerReq: t.GetProcTimeSum(sessionId)/float64(reqCnt),
+		RequestCount: reqCnt,
+		RequestRate:  float64(reqCnt) / t.GetProcTimeSum(sessionId),
+		TimePerReq:   t.GetProcTimeSum(sessionId) / float64(reqCnt),
 	}
 }
 
