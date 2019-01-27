@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
+	"time"
 )
 
 type Config struct {
-	ConnectMethod  string `json:"connectMethod"`
-	ClientAddress  string `json:"clientAddress"`
-	ConnectionPort int    `json:"connectionPort"`
+	ConnectMethod  string        `json:"connectMethod"`
+	ClientAddress  string        `json:"clientAddress"`
+	ConnectionPort int           `json:"connectionPort"`
+	ConnectTimeOut time.Duration `json:"connectTimeOut"`
 }
 
 var (

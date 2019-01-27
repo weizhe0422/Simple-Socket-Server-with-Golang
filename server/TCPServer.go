@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"golang.org/x/time/rate"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
 	"strconv"
 	"sync"
 	"time"
@@ -222,7 +224,30 @@ func doReceiveMessage(conn net.Conn) {
 		log.Println("Current Connection Count: ", G_TCPServer.GetConnsCount())
 		fmt.Println("Address(" + conn.RemoteAddr().String() + "): " + strconv.Itoa(G_TCPServer.Connects[conn.RemoteAddr().String()]))
 
+		//simulate send the request message to another external API
+		mockRedirect(string(msgBuf[:msgLength]))
+
 		log.Println(sess.GetSetting(sessionID))
 
 	}
+}
+
+func mockRedirect(message string) {
+	var (
+		redirectURL  string
+		resp         *http.Response
+		redirectResp []byte
+		err          error
+	)
+
+	redirectURL = "http://" + G_Config.ServerAddress + ":" + strconv.Itoa(G_Config.HttpPort) + "/mock?ReceiveMSG=" + message
+	if resp, err = http.Get(redirectURL); err != nil {
+		log.Println("failed to link to ", redirectURL, ":", err.Error())
+	}
+	if redirectResp, err = ioutil.ReadAll(resp.Body); err != nil {
+		log.Println("failed to get redirect URL response", err.Error())
+	}
+	log.Println("wait to get the response......")
+	time.Sleep(3 * time.Second)
+	fmt.Println("Redirect Response Content", string(redirectResp))
 }
