@@ -19,6 +19,7 @@ func initArgs() {
 func main() {
 	var (
 		err error
+		apiSvr *server.ApiServer
 	)
 
 	initArgs()
@@ -32,10 +33,10 @@ func main() {
 	server.InitTCPServer()
 	log.Println("Initial TCP server success")
 
-	server.InitApiServer()
+	apiSvr = server.InitApiServer()
 	log.Println("Initial API server success")
 
-	go server.G_ApiServer.StartToService()
+	go apiSvr.StartToService()
 	server.G_TCPServer.StartToService()
 
 	for {
