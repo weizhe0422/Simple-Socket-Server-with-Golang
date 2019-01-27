@@ -71,17 +71,13 @@ func main() {
 			}
 			inputMsgTrim = strings.Trim(inputMsg, "\r\n")
 
-			if inputMsgTrim == "send" {
-				break
-			}
+			respString.Write([]byte(inputMsgTrim))
 
-			if inputMsgTrim == "quit" || inputMsgTrim == "bye" {
+			if inputMsgTrim == "quit" {
 				return
 			}
-
-			respString.Write([]byte(inputMsgTrim))
+			conn.Write([]byte(clientNameTrim + ":" + respString.String()))
 		}
-		conn.Write([]byte(clientNameTrim + ":" + respString.String()))
 	}
 
 ERR:

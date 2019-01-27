@@ -31,10 +31,12 @@ func InitConfig(fileName string) (err error) {
 	)
 
 	if content, err = ioutil.ReadFile(fileName); err != nil {
+		log.Println("failed to read configuration file: ", fileName, ", ", err.Error())
 		return
 	}
 
 	if err = json.Unmarshal(content, &conf); err != nil {
+		log.Println("failed to  Unmarshal configuration file:", err.Error())
 		return
 	}
 

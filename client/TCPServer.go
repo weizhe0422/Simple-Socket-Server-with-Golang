@@ -40,8 +40,14 @@ func (t *TCPServer) CreateListener(ListenAddress string) (listener net.Listener,
 }
 
 func (t *TCPServer) CreateDialer(ListenAddress string) (conn net.Conn, err error) {
+	var (
+		dialer *net.Dialer
+	)
+	dialer = &net.Dialer{
+		Timeout: G_Config.ConnectTimeOut,
+	}
 
-	if conn, err = net.Dial(G_TCPServer.Method, ListenAddress+":"+strconv.Itoa(G_TCPServer.Port)); err != nil {
+	if conn, err = dialer.Dial(G_TCPServer.Method, ListenAddress+":"+strconv.Itoa(G_TCPServer.Port)); err != nil {
 		log.Println(ListenAddress + ":" + strconv.Itoa(G_TCPServer.Port))
 		log.Fatal("failed to create a connector:", err.Error())
 	}

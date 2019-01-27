@@ -1,5 +1,6 @@
 {
   "connectMethod": "tcp",
   "clientAddress": "localhost",
-  "connectionPort": 5000
+  "connectionPort": 5000,
+  "connectTimeOut":  3000,
 }

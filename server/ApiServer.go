@@ -31,14 +31,7 @@ type ApiServer struct {
 	StopCh   chan error
 }
 
-var (
-	G_ApiServer *ApiServer
-)
-
-func InitApiServer() {
-	var (
-		apiServer *ApiServer
-	)
+func InitApiServer() (apiServer *ApiServer) {
 
 	apiServer = &ApiServer{
 		httpSvr: &http.Server{
@@ -51,7 +44,7 @@ func InitApiServer() {
 		StopCh:  make(chan error),
 	}
 
-	G_ApiServer = apiServer
+	return apiServer
 }
 
 func (a *ApiServer) StartToService() (err error) {
@@ -68,6 +61,7 @@ func (a *ApiServer) StartToService() (err error) {
 	log.Println("create API server listener success")
 
 	mux = createHandleFunc(G_Config.ServerStatusPath, chkServerStatus)
+	mux.HandleFunc("/mock", mockExternAPI)
 
 	staticDir = http.Dir(G_Config.WebRoot)
 	staticHandler = http.FileServer(staticDir)
@@ -127,8 +121,21 @@ func chkServerStatus(resp http.ResponseWriter, req *http.Request) (err error) {
 	resp.WriteHeader(http.StatusOK)
 	resp.Write(respJson)
 	return nil
+}
 
-	//resp.Write([]byte(strconv.Itoa(G_TCPServer.GetConnsCount())))
+func mockExternAPI(resp http.ResponseWriter, req *http.Request) {
+	var (
+		respMsg string
+		reqKeys []string
+		ok      bool
+	)
+	if reqKeys, ok = req.URL.Query()["ReceiveMSG"]; !ok || len(reqKeys) < 1 {
+		resp.Write([]byte("can not get valud of ReceiveMSG"))
+		return
+	}
+	respMsg = req.RemoteAddr + ":" + reqKeys[0]
+
+	resp.Write([]byte(respMsg))
 }
 
 func errWrapper(handler errHandler) func(http.ResponseWriter, *http.Request) {

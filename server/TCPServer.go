@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"golang.org/x/time/rate"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
 	"strconv"
 	"sync"
 	"time"
@@ -68,7 +70,7 @@ func (t *TCPServer) StartToService() {
 		ctx      context.Context
 	)
 	if listener, err = t.CreateListener(); err != nil {
-		goto ERR
+		log.Println("failed to create listener: ", err.Error())
 	}
 	t.Listener = listener
 	log.Println("Create TCP listener success")
@@ -76,13 +78,11 @@ func (t *TCPServer) StartToService() {
 	log.Println("Start to accept request and do action...")
 
 	ctx, _ = context.WithCancel(context.TODO())
+
 	for {
 		t.Limiter.Wait(ctx)
 		t.ListenAndAction(listener, doReceiveMessage)
 	}
-
-ERR:
-	log.Fatalln(err.Error())
 }
 
 func (t *TCPServer) CreateListener() (listener net.Listener, err error) {
@@ -127,7 +127,11 @@ func (t *TCPServer) GetConnsCount() int {
 }
 
 func (t *TCPServer) GetConnHistBySessId(sessionId string) (connHist []SessionInfo) {
-	if connHist, ok := t.SvrStatus.ConnHist[sessionId]; ok {
+	var (
+		ok bool
+	)
+
+	if connHist, ok = t.SvrStatus.ConnHist[sessionId]; ok {
 		return connHist
 	}
 
@@ -141,9 +145,10 @@ func (t *TCPServer) GetConnHistALL() (connHist map[string][]SessionInfo) {
 func (t *TCPServer) GetProcTimeSum(sessionId string) float64 {
 	var (
 		procTimeSum float64
+		infoItem    SessionInfo
 	)
 
-	for _, infoItem := range t.GetConnHistBySessId(sessionId) {
+	for _, infoItem = range t.GetConnHistBySessId(sessionId) {
 		procTimeSum += infoItem.Duration
 	}
 
@@ -219,7 +224,30 @@ func doReceiveMessage(conn net.Conn) {
 		log.Println("Current Connection Count: ", G_TCPServer.GetConnsCount())
 		fmt.Println("Address(" + conn.RemoteAddr().String() + "): " + strconv.Itoa(G_TCPServer.Connects[conn.RemoteAddr().String()]))
 
+		//simulate send the request message to another external API
+		mockRedirect(string(msgBuf[:msgLength]))
+
 		log.Println(sess.GetSetting(sessionID))
 
 	}
+}
+
+func mockRedirect(message string) {
+	var (
+		redirectURL  string
+		resp         *http.Response
+		redirectResp []byte
+		err          error
+	)
+
+	redirectURL = "http://" + G_Config.ServerAddress + ":" + strconv.Itoa(G_Config.HttpPort) + "/mock?ReceiveMSG=" + message
+	if resp, err = http.Get(redirectURL); err != nil {
+		log.Println("failed to link to ", redirectURL, ":", err.Error())
+	}
+	if redirectResp, err = ioutil.ReadAll(resp.Body); err != nil {
+		log.Println("failed to get redirect URL response", err.Error())
+	}
+	log.Println("wait to get the response......")
+	time.Sleep(3 * time.Second)
+	fmt.Println("Redirect Response Content", string(redirectResp))
 }
