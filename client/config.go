@@ -12,6 +12,7 @@ type Config struct {
 	ClientAddress  string        `json:"clientAddress"`
 	ConnectionPort int           `json:"connectionPort"`
 	ConnectTimeOut time.Duration `json:"connectTimeOut"`
+	ConnectAlive   time.Duration `json:"connectAlive"`
 }
 
 var (

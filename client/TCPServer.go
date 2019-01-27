@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 	"strconv"
+	"time"
 )
 
 type TCPServer struct {
@@ -44,7 +45,7 @@ func (t *TCPServer) CreateDialer(ListenAddress string) (conn net.Conn, err error
 		dialer *net.Dialer
 	)
 	dialer = &net.Dialer{
-		Timeout: G_Config.ConnectTimeOut,
+		Timeout: G_Config.ConnectTimeOut * time.Millisecond,
 	}
 
 	if conn, err = dialer.Dial(G_TCPServer.Method, ListenAddress+":"+strconv.Itoa(G_TCPServer.Port)); err != nil {

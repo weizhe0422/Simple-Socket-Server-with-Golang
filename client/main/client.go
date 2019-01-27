@@ -64,20 +64,18 @@ func main() {
 		fmt.Println("Start to send message until you type quit to quit:")
 		respString = bytes.NewBufferString("")
 
-		for {
-			if inputMsg, err = inputReader.ReadString('\n'); err != nil {
-				log.Println("failed to read string from user:", err.Error())
-				continue
-			}
-			inputMsgTrim = strings.Trim(inputMsg, "\r\n")
-
-			respString.Write([]byte(inputMsgTrim))
-
-			if inputMsgTrim == "quit" {
-				return
-			}
-			conn.Write([]byte(clientNameTrim + ":" + respString.String()))
+		if inputMsg, err = inputReader.ReadString('\n'); err != nil {
+			log.Println("failed to read string from user:", err.Error())
+			continue
 		}
+		inputMsgTrim = strings.Trim(inputMsg, "\r\n")
+
+		respString.Write([]byte(inputMsgTrim))
+
+		if inputMsgTrim == "quit" {
+			return
+		}
+		conn.Write([]byte(clientNameTrim + ":" + respString.String()))
 	}
 
 ERR:
