@@ -10,9 +10,17 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
+
+type channelData struct {
+	session     *Session
+	sessionID   string
+	sessionInfo SessionInfo
+	content     []byte
+}
 
 type ServerStatus struct {
 	ConnCount    int
@@ -173,12 +181,13 @@ func (t *TCPServer) GetServerSummry() map[string]SessionReqInfo {
 
 func doReceiveMessage(conn net.Conn) {
 	var (
-		msgBuf    []byte
-		msgLength int
-		err       error
-		sess      *Session
-		sessInfo  SessionInfo
-		sessionID string
+		sess         *Session
+		sessInfo     SessionInfo
+		sessionID    string
+		readChannel  chan []byte
+		writeChannel chan *channelData
+		readData     []byte
+		passData     *channelData
 	)
 
 	G_TCPServer.Connects[conn.RemoteAddr().String()] = 0
@@ -194,12 +203,39 @@ func doReceiveMessage(conn net.Conn) {
 		G_TCPServer.Sessions.Delete(sessionID)
 	}()
 
+	readChannel = make(chan []byte, 1024)
+	writeChannel = make(chan *channelData, 1024)
+
+	go readCoroutine(conn, readChannel, sessionID, &sessInfo)
+	go writeCoroutine(conn, writeChannel)
+
 	for {
-		G_TCPServer.Connects[conn.RemoteAddr().String()]++
+		select {
+		case readData = <-readChannel:
+			if string(readData) == "bye" {
+				return
+			}
 
-		sessInfo.RemoteAddress = conn.RemoteAddr().String()
-		sessInfo.ReqTime = time.Now()
+			passData = &channelData{
+				session:     sess,
+				sessionID:   sessionID,
+				sessionInfo: sessInfo,
+				content:     readData,
+			}
 
+			writeChannel <- passData
+		}
+	}
+}
+
+func readCoroutine(conn net.Conn, readChannel chan []byte, sessionID string, sessInfo *SessionInfo) {
+	var (
+		msgBuf    []byte
+		msgLength int
+		err       error
+	)
+
+	for {
 		msgBuf = make([]byte, G_Config.ReceiveBuffer)
 		if msgLength, err = conn.Read(msgBuf); err != nil {
 			if err == io.EOF {
@@ -209,26 +245,39 @@ func doReceiveMessage(conn net.Conn) {
 			log.Fatalln("failed to read message: ", err.Error())
 			continue
 		}
+		G_TCPServer.Connects[conn.RemoteAddr().String()]++
+		sessInfo.RemoteAddress = conn.RemoteAddr().String()
 		sessInfo.ReqTime = time.Now()
 
 		fmt.Println("Received message: ", string(msgBuf[:msgLength]))
 
 		sessInfo.Data = string(msgBuf[:msgLength])
-		sessInfo.RespTime = time.Now()
-		sessInfo.Duration = sessInfo.RespTime.Sub(sessInfo.ReqTime).Seconds()
+		readChannel <- msgBuf[:msgLength]
+	}
 
-		sess.SetSetting(sessionID, sessInfo)
-		G_TCPServer.SetConnHist(sessionID, sessInfo)
-		G_TCPServer.UpdateServerSummry(sessionID, G_TCPServer.Connects[conn.RemoteAddr().String()])
+}
 
-		log.Println("Current Connection Count: ", G_TCPServer.GetConnsCount())
-		fmt.Println("Address(" + conn.RemoteAddr().String() + "): " + strconv.Itoa(G_TCPServer.Connects[conn.RemoteAddr().String()]))
+func writeCoroutine(conn net.Conn, writeChannel chan *channelData) {
+	var (
+		readData *channelData
+	)
 
-		//simulate send the request message to another external API
-		mockRedirect(string(msgBuf[:msgLength]))
+	for {
+		select {
+		case readData = <-writeChannel:
+			log.Println("Current Connection Count: ", G_TCPServer.GetConnsCount())
+			fmt.Println("Address(" + conn.RemoteAddr().String() + "): " + strconv.Itoa(G_TCPServer.Connects[conn.RemoteAddr().String()]))
 
-		log.Println(sess.GetSetting(sessionID))
+			readData.sessionInfo.RespTime = time.Now()
+			readData.sessionInfo.Duration = readData.sessionInfo.RespTime.Sub(readData.sessionInfo.ReqTime).Seconds()
+			readData.session.SetSetting(readData.sessionID, readData.sessionInfo)
+			G_TCPServer.SetConnHist(readData.sessionID, readData.sessionInfo)
+			G_TCPServer.UpdateServerSummry(readData.sessionID, G_TCPServer.Connects[conn.RemoteAddr().String()])
+			log.Println(readData.session.GetSetting(readData.sessionID))
 
+			//simulate send the request message to another external API
+			mockRedirect(string(readData.content))
+		}
 	}
 }
 
@@ -240,7 +289,10 @@ func mockRedirect(message string) {
 		err          error
 	)
 
+	message = strings.Replace(message, " ", "_", -1)
+
 	redirectURL = "http://" + G_Config.ServerAddress + ":" + strconv.Itoa(G_Config.HttpPort) + "/mock?ReceiveMSG=" + message
+	log.Println(redirectURL)
 	if resp, err = http.Get(redirectURL); err != nil {
 		log.Println("failed to link to ", redirectURL, ":", err.Error())
 	}
