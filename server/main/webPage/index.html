@@ -103,69 +103,71 @@
             document.getElementById('refreshTime').innerHTML = "Refresh Time:" + refreshTime
         }
 
+        function reloadPage(){
+            $.ajax({
+                url:"/server/status",
+                type:'get',
+                success:function(value){
+                    $('#job-list tbody').empty()
+                    var tr = $("<tr>")
+                    $.each(value,function(idx,obj){
+                        if(idx=="ConnCount"){
+                            tr.append($('<td class="connection-count">').html(obj))
+                        }
+                    })
+                    $('#job-list').append(tr)
+
+
+                    $('#session-status-info tbody').empty()
+                    $.each(value,function(idx,obj){
+                        if(idx=="SessInfoSumm"){
+                            $.each(obj,function (idx2, obj2) {
+                                var tr1 = $("<tr>")
+                                tr1.append($('<td class="session-id">').html(idx2))
+                                $.each(obj2,function (idx3, obj3) {
+                                    tr1.append($('<td class="request-count">').html(obj3))
+                                    $('#session-status-info').append(tr1)
+                                })
+                            })
+                        }
+                    })
+
+                    $('#session-status-detail tbody').empty()
+                    $.each(value,function(idx,obj){
+                        if(idx=="ConnHist"){
+                            $.each(obj,function (idx2, obj2) {
+                                $.each(obj2,function (idx3, obj3) {
+                                    var tr1 = $("<tr>")
+                                    tr1.append($('<td class="session-id">').html(idx2))
+                                    $.each(obj3,function (idx4, obj4) {
+                                        if (idx4=="ReqTime"){
+                                            tr1.append($('<td class="request-time">').html(obj4))
+                                        }else if (idx4=="RespTime"){
+                                            tr1.append($('<td class="response-time">').html(obj4))
+                                        }else if (idx4=="RemoteAddress"){
+                                            tr1.append($('<td class="remote-address">').html(obj4))
+                                        }else if (idx4=="Data"){
+                                            tr1.append($('<td class="message">').html(obj4))
+                                        }
+                                        $('#session-status-detail').append(tr1)
+                                    })
+                                })
+
+                            })
+
+                        }
+                    })
+                }
+            })
+        }
+
         $(document).ready(function () {
             reloadPage()
 
-            $("#refresh").on('click',reloadPage())
+        })
+        $('#refresh').on('click',function () {
+            reloadPage()
 
-
-            function reloadPage(){
-                $.ajax({
-                    url:"/server/status",
-                    type:'get',
-                    success:function(value){
-                        $('#job-list tbody').empty()
-                        var tr = $("<tr>")
-                        $.each(value,function(idx,obj){
-                            if(idx=="ConnCount"){
-                                tr.append($('<td class="connection-count">').html(obj))
-                            }
-                        })
-                        $('#job-list').append(tr)
-
-
-                        $('#session-status-info tbody').empty()
-                        $.each(value,function(idx,obj){
-                            if(idx=="SessInfoSumm"){
-                                $.each(obj,function (idx2, obj2) {
-                                    var tr1 = $("<tr>")
-                                    tr1.append($('<td class="session-id">').html(idx2))
-                                    $.each(obj2,function (idx3, obj3) {
-                                        tr1.append($('<td class="request-count">').html(obj3))
-                                        $('#session-status-info').append(tr1)
-                                    })
-                                })
-                            }
-                        })
-
-                        $('#session-status-detail tbody').empty()
-                        $.each(value,function(idx,obj){
-                            if(idx=="ConnHist"){
-                                $.each(obj,function (idx2, obj2) {
-                                    $.each(obj2,function (idx3, obj3) {
-                                        var tr1 = $("<tr>")
-                                        tr1.append($('<td class="session-id">').html(idx2))
-                                        $.each(obj3,function (idx4, obj4) {
-                                            if (idx4=="ReqTime"){
-                                                tr1.append($('<td class="request-time">').html(obj4))
-                                            }else if (idx4=="RespTime"){
-                                                tr1.append($('<td class="response-time">').html(obj4))
-                                            }else if (idx4=="RemoteAddress"){
-                                                tr1.append($('<td class="remote-address">').html(obj4))
-                                            }else if (idx4=="Data"){
-                                                tr1.append($('<td class="message">').html(obj4))
-                                            }
-                                            $('#session-status-detail').append(tr1)
-                                        })
-                                    })
-
-                                })
-
-                            }
-                        })
-                    }
-                })
-            }
         })
     </script>
 </body>
